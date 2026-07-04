@@ -1,0 +1,202 @@
+{
+  "app_name": "RythuMitra",
+  "personality": "1 iOS-Native Clean structure with 4 Tactile soft rounded components and earthy agricultural tones",
+  "personality_one_liner": "A clean, grounded, and trustworthy agricultural command center that feels approachable and professional for farmers.",
+  "color": {
+    "light": {
+      "surface": "#F7F9F7",
+      "onSurface": "#111C14",
+      "surfaceSecondary": "#FFFFFF",
+      "onSurfaceSecondary": "#111C14",
+      "surfaceTertiary": "#E7F0E9",
+      "onSurfaceTertiary": "#0F5D2A",
+      "surfaceInverse": "#0F5D2A",
+      "onSurfaceInverse": "#FFFFFF",
+      "brand": "#1E8A3E",
+      "brandPrimary": "#1E8A3E",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#0F5D2A",
+      "onBrandSecondary": "#FFFFFF",
+      "brandTertiary": "#D3E8D9",
+      "onBrandTertiary": "#0F5D2A",
+      "success": "#16A34A",
+      "onSuccess": "#FFFFFF",
+      "warning": "#D97706",
+      "onWarning": "#FFFFFF",
+      "error": "#DC2626",
+      "onError": "#FFFFFF",
+      "info": "#4B5563",
+      "onInfo": "#FFFFFF",
+      "border": "#E1E9E2",
+      "borderStrong": "#B8CFC0",
+      "divider": "#E1E9E2"
+    },
+    "dark": {
+      "surface": "#0B120E",
+      "onSurface": "#E6EFE8",
+      "surfaceSecondary": "#14221A",
+      "onSurfaceSecondary": "#E6EFE8",
+      "surfaceTertiary": "#1B3224",
+      "onSurfaceTertiary": "#74D695",
+      "surfaceInverse": "#FFFFFF",
+      "onSurfaceInverse": "#0B120E",
+      "brand": "#22A046",
+      "brandPrimary": "#22A046",
+      "onBrandPrimary": "#FFFFFF",
+      "brandSecondary": "#1E8A3E",
+      "onBrandSecondary": "#FFFFFF",
+      "brandTertiary": "#1B3B24",
+      "onBrandTertiary": "#74D695",
+      "success": "#22C55E",
+      "onSuccess": "#000000",
+      "warning": "#F59E0B",
+      "onWarning": "#000000",
+      "error": "#EF4444",
+      "onError": "#FFFFFF",
+      "info": "#9CA3AF",
+      "onInfo": "#000000",
+      "border": "#263B2D",
+      "borderStrong": "#375641",
+      "divider": "#263B2D"
+    }
+  },
+  "typography": {
+    "displayFontFamily": "Plus Jakarta Sans",
+    "textFontFamily": "Plus Jakarta Sans",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous vertical breathing room. Avoid dense clusters; use safe spacing around cards (lg) and inner card padding (lg).",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 16,
+    "pill": 999
+  },
+  "shadow_tier": 1,
+  "navigation": "bottom_tabs",
+  "icon_set": "Ionicons",
+  "glassmorphism": {
+    "enabled": true,
+    "do's": [
+      "Floating Mic FAB container",
+      "Bottom tab bar",
+      "Sticky 'Get Fertilizer Plan' CTA bottom container"
+    ],
+    "dont's": [
+      "Data sensor cards",
+      "Timeline items",
+      "Form inputs"
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-glass-effect",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Auth",
+      "purpose": "Splash-style onboarding and login.",
+      "states": {
+        "loading": "Spinner in center of solid brand gradient",
+        "empty": "N/A",
+        "error": "Standard alert toast"
+      },
+      "layout": "Full-bleed background image with top-to-bottom dark gradient scrim. Huge 'RythuMitra' display text and sub-branding. Mobile Number and Password text inputs placed in the lower third inside a glassmorphic or semi-transparent container, followed by a wide pill-shaped primary CTA."
+    },
+    {
+      "name": "Home",
+      "purpose": "Main dashboard for IoT monitoring and farm overview.",
+      "states": {
+        "loading": "Skeleton grid for sensor tiles",
+        "empty": "Illustration of farm with 'Connect your first device' CTA",
+        "error": "Error banner at top: 'Unable to sync sensors', Retry button."
+      },
+      "layout": "Header: Greeting (Good Morning + Name), Avatar, Bell icon. Sticky filter: Field selector dropdown (glass/tinted). Scrollable content: Alert banner (warning surface), IoT Device Card (status, battery %, Play/Pause/Stop/Sync controls), 2x2 grid for Live Sensor Data (N, P, K, Soil Moisture - using flexWrap: wrap, width: 48%, space-between) featuring big numeric values and status pills."
+    },
+    {
+      "name": "Advice",
+      "purpose": "AI-powered fertilizer and crop recommendation generator.",
+      "states": {
+        "loading": "Spinner overlay on results section",
+        "empty": "Select a field to get recommendations",
+        "error": "Failed to generate AI advice"
+      },
+      "layout": "Top section: 'Configure Query' card (dropdowns for Type, AI Model, Field). Large sticky 'Get Fertilizer Plan' CTA pinned to the bottom of the screen. Middle section (after generation): Soil Health Status (row of 3 tiles), warning banner, AI recommendation cards in a vertical stack."
+    },
+    {
+      "name": "Planner",
+      "purpose": "Activity timeline and task tracker.",
+      "states": {
+        "loading": "Skeleton list",
+        "empty": "No active crops, start a new cultivation cycle",
+        "error": "Failed to load timeline"
+      },
+      "layout": "Header: Crop name, Field, Duration, Day X of Y. Overall progress bar underneath. 'Today's Task' highlighted hero card (Mark Done CTA + Voice Guide). 'Daily Reminders' toggle. Below: Vertical timeline stepper (left-bordered line with absolute dots/icons) listing Completed, Today, and Upcoming tasks."
+    },
+    {
+      "name": "Profile",
+      "purpose": "User configuration, language settings, and farm details.",
+      "states": {
+        "loading": "Skeleton text blocks",
+        "empty": "N/A",
+        "error": "Failed to update profile"
+      },
+      "layout": "Top: Deep forest-green primary gradient header (brandSecondary -> brandPrimary) overlapping a white card containing Avatar, Name, Phone. Horizontal scroll row of 3 stat pills (Fields, Acres, Score). Vertical list of editable cards: Personal Details, Farm Details, Device Info, Settings (Language toggle), and a subtle Logout button at the bottom."
+    }
+  ],
+  "images": {
+    "splash_background": {
+      "url": "https://images.unsplash.com/photo-1716248899980-cd202c37a0f4?crop=entropy&cs=srgb&fm=jpg",
+      "dark": "https://images.unsplash.com/photo-1716248899980-cd202c37a0f4?crop=entropy&cs=srgb&fm=jpg",
+      "alt": "Close up of wheat field, used for splash/auth background"
+    },
+    "farmer_avatar": {
+      "url": "https://images.unsplash.com/photo-1722925407220-b22e1ced9ee9?crop=entropy&cs=srgb&fm=jpg",
+      "alt": "Smiling Indian male farmer portrait"
+    },
+    "farm_empty_state": {
+      "url": "https://images.unsplash.com/photo-1560493676-04071c5f467b?crop=entropy&cs=srgb&fm=jpg",
+      "alt": "Rows of green crops at sunset for empty/loading states"
+    }
+  },
+  "haptics": {
+    "primary_cta_press": "impactMedium",
+    "tab_change": "selection",
+    "iot_device_control_toggle": "impactLight",
+    "dropdown_open": "selection",
+    "task_mark_done": "notificationSuccess",
+    "language_toggle": "selection"
+  },
+  "instructions_to_main_agent": [
+    "Design Vibe: Ensure the UI feels like a clean iOS-Native dashboard but uses earthy forest greens. Use `expo-linear-gradient` for the signature deep green headers (#0F5D2A -> #1E8A3E) in the Profile and Auth screens.",
+    "Data Display: Sensor cards (N, P, K, Moisture) must use clear, large typography for values and status pills ('Good', 'Low'). Use a 2-column flex-wrap grid with `justifyContent: 'space-between'`.",
+    "Mic FAB: Render the Whisper voice query floating action button above the bottom tab bar. Give it a distinct `brandTertiary` background or glassmorphic blur so it stands out but feels integrated.",
+    "Sticky Actions: The 'Get Fertilizer Plan' CTA must be sticky at the bottom of the screen (above the tab bar/safe area).",
+    "Image Overlay Contrast: Apply a vertical gradient scrim overlay over the splash background image to ensure the white login form and logo are highly readable.",
+    "Activity Stepper: Build the Planner timeline with a left-positioned vertical line and absolute-positioned circular icons marking the status of each task.",
+    "Implement the specified `haptics` on all corresponding interactions using expo-haptics."
+  ]
+}
