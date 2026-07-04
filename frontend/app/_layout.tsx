@@ -1,33 +1,40 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { LogBox } from "react-native";
+import { useEffect, useState } from "react";
+import { LogBox, StatusBar } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { store } from "@/src/lib/api";
 
+LogBox.ignoreAllLogs(true);
 
-// Disable logbox errors etc so that users can see the app
-// and agent works as expected.
-LogBox.ignoreAllLogs(true)
-
-// Keep the native splash visible from cold start until icon fonts register.
-// Required because @expo/vector-icons' componentDidMount fallback fires
-// Font.loadAsync against a broken vendor path if any <Icon> mounts before
-// the family is registered — which throws on Android Expo Go.
+// Preserve prewarm logic for icon fonts.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
+  const [storeReady, setStoreReady] = useState(false);
 
   useEffect(() => {
-    if (loaded || error) {
+    store.init().finally(() => setStoreReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((loaded || error) && storeReady) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error]);
+  }, [loaded, error, storeReady]);
 
-  // If the CDN is unreachable we fall through on error rather than wedging
-  // the app — icons will tofu, but the app still boots.
-  if (!loaded && !error) return null;
+  if ((!loaded && !error) || !storeReady) return null;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#0F5D2A" />
+        <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
 }
