@@ -7,33 +7,54 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { store } from "@/src/lib/api";
+import { initDatabase } from "@/src/lib/db";
+import { useSync } from "@/src/hooks/useSync";
 
 LogBox.ignoreAllLogs(true);
 
 // Preserve prewarm logic for icon fonts.
 SplashScreen.preventAutoHideAsync();
 
+function AppEntry() {
+  // Start the background sync engine
+  useSync();
+
+  return (
+    <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+  );
+}
+
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
-  const [storeReady, setStoreReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    store.init().finally(() => setStoreReady(true));
+    async function prepare() {
+      try {
+        await initDatabase();
+        await store.init();
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setReady(true);
+      }
+    }
+    prepare();
   }, []);
 
   useEffect(() => {
-    if ((loaded || error) && storeReady) {
+    if ((loaded || error) && ready) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error, storeReady]);
+  }, [loaded, error, ready]);
 
-  if ((!loaded && !error) || !storeReady) return null;
+  if ((!loaded && !error) || !ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor="#0F5D2A" />
-        <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
+        <AppEntry />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -1,7 +1,5 @@
-/**
- * Shared design tokens & backend helper.
- */
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { FarmerDb, FieldDb } from "./db";
 
 export const COLORS = {
   brand: "#1E8A3E",
@@ -25,48 +23,216 @@ export const COLORS = {
 export const RADIUS = { sm: 6, md: 12, lg: 16, pill: 999 };
 export const SPACING = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 };
 
-export const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || "";
+export const BACKEND_URL = "https://dbrinno.site/APP_API";
 
 const TOKEN_KEY = "rm_token";
+const FARMER_ID_KEY = "rm_farmer_id";
 
-export async function saveToken(t: string) {
-  await AsyncStorage.setItem(TOKEN_KEY, t);
+export interface FarmerDto {
+  farmer_id: number;
+  farmer_name: string;
+  email_id: string;
+  phone_number: string;
+  location: string;
+  district_id: number;
+  state_id: number;
+  holding_acres: number;
+  device_id: string;
 }
+
+export interface FieldDto {
+  field_id: number;
+  Field_Name: string;
+  farmer_id: number;
+  soil_id?: number;
+  area?: number;
+  location?: string;
+  district_id?: number;
+  state_id?: number;
+  current_yielding_crop_name?: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  token?: string;
+  farmer?: FarmerDto;
+  fields?: FieldDto[];
+}
+
+export interface SoilNutrient {
+  record_id: number;
+  n_kghac: number;
+  p_kghac: number;
+  k_kghac: number;
+  ph: number;
+  ec_ds: number;
+}
+
+export interface TopCrop {
+  rank: number;
+  crop_id: number;
+  crop_name: string;
+  total_fertilizer_kg_ha: number;
+  seasons: {
+    season_name: string;
+    stcr_dosage: { fn_kg_ha: number; fp_kg_ha: number; fk_kg_ha: number };
+    fertilizer_products: { fertilizer_name: string; kg_per_ha: number }[];
+    soil_nutrient: SoilNutrient;
+    note: string;
+  }[];
+}
+
+export interface RecommendationResponse {
+  farmer_id: number;
+  field_id: number;
+  soil_name?: string;
+  recommendation_basis?: string;
+  top_crops?: TopCrop[];
+}
+
+export async function saveSession(token: string, farmerId: number) {
+  await AsyncStorage.multiSet([
+    [TOKEN_KEY, token],
+    [FARMER_ID_KEY, farmerId.toString()]
+  ]);
+}
+
 export async function loadToken(): Promise<string | null> {
   return AsyncStorage.getItem(TOKEN_KEY);
 }
+
 export async function clearToken() {
-  await AsyncStorage.removeItem(TOKEN_KEY);
+  await AsyncStorage.multiRemove([TOKEN_KEY, FARMER_ID_KEY]);
 }
 
-export async function apiFetch<T = any>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiFetch<T = any>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
   const token = await loadToken();
   const headers: Record<string, string> = {
+    Accept: "application/json",
     ...(init.headers as Record<string, string> | undefined),
   };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  const isForm = init.body instanceof FormData;
-  if (!isForm && init.body && !headers["Content-Type"]) {
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (init.body && !(init.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
-  const res = await fetch(`${BACKEND_URL}/api${path}`, { ...init, headers });
-  const text = await res.text();
+
+  const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+  const url = `${BACKEND_URL}/${cleanPath}`;
+
+  const res = await fetch(url, { ...init, headers });
+  const raw = await res.text();
+
   let data: any = null;
   try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = text;
+    data = raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    throw new Error(`Server returned invalid response.`);
   }
-  if (!res.ok) {
-    const err = (data && (data.detail || data.message)) || `HTTP ${res.status}`;
-    throw new Error(typeof err === "string" ? err : JSON.stringify(err));
+
+  if (!res.ok || data?.success === false) {
+    throw new Error(data?.message || `HTTP ${res.status}`);
   }
+
   return data as T;
 }
 
-// ---------------- i18n ----------------
-export type Lang = "en" | "te" | "hi";
+export const AuthApi = {
+  login: async (phone_number: string, password: string): Promise<AuthResponse> => {
+    const res = await apiFetch<AuthResponse>("auth.php", {
+      method: "POST",
+      body: JSON.stringify({ phone_number, password }),
+    });
 
+    if (res.token && res.farmer) {
+      await saveSession(res.token, res.farmer.farmer_id);
+      await FarmerDb.saveFarmer(res.farmer);
+      if (res.fields) await FieldDb.saveFields(res.fields);
+    }
+    return res;
+  },
+  sendOtp: async (phone_number: string): Promise<AuthResponse> => {
+    return await apiFetch<AuthResponse>("send_otp.php", {
+      method: "POST",
+      body: JSON.stringify({ phone_number }),
+    });
+  },
+  signup: async (phone_number: string, otp: string, password: string): Promise<AuthResponse> => {
+    const res = await apiFetch<AuthResponse>("signup.php", {
+      method: "POST",
+      body: JSON.stringify({ phone_number, otp, password }),
+    });
+    if (res.token && res.farmer) {
+      await saveSession(res.token, res.farmer.farmer_id);
+      await FarmerDb.saveFarmer(res.farmer);
+    }
+    return res;
+  }
+};
+
+export const RecommendationApi = {
+  getAdvice: async (fieldId: number, type: string = "auto"): Promise<RecommendationResponse> => {
+    const endpoint = type === "auto" ? "recommend/auto.php" : `recommend/${type}.php`;
+    return await apiFetch<RecommendationResponse>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ field_id: fieldId }),
+    });
+  }
+};
+
+export const PlannerApi = {
+  getTasks: async (fieldId: number) => {
+    return await apiFetch(`planner.php?field_id=${fieldId}`);
+  },
+  markComplete: async (taskId: string) => {
+    return await apiFetch("planner_complete.php", {
+      method: "POST",
+      body: JSON.stringify({ task_id: taskId }),
+    });
+  }
+};
+
+type Listener = () => void;
+class Store {
+  lang: Lang = "en";
+  user: any = null;
+  private listeners = new Set<Listener>();
+  subscribe(l: Listener) {
+    this.listeners.add(l);
+    return () => this.listeners.delete(l);
+  }
+  private emit() {
+    this.listeners.forEach((l) => l());
+  }
+  async init() {
+    const l = (await AsyncStorage.getItem("rm_lang")) as Lang | null;
+    if (l && ["en", "te", "hi"].includes(l)) this.lang = l;
+    const farmer = await FarmerDb.getFarmer();
+    if (farmer) this.user = farmer;
+  }
+  async setLang(l: Lang) {
+    this.lang = l;
+    await AsyncStorage.setItem("rm_lang", l);
+    this.emit();
+  }
+  setUser(u: any) {
+    this.user = u;
+    this.emit();
+  }
+  t(key: string): string {
+    return STRINGS[this.lang][key] || STRINGS.en[key] || key;
+  }
+}
+export const store = new Store();
+
+export type Lang = "en" | "te" | "hi";
 export const STRINGS: Record<Lang, Record<string, string>> = {
   en: {
     welcome_back: "Welcome Back",
@@ -234,7 +400,7 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     personal_details: "व्यक्तिगत विवरण",
     farm_details: "कृषि विवरण",
     device_info: "डिवाइस जानकारी",
-    settings: "सेटिंग्स",
+    settings: "सेTINGS",
     language: "भाषा",
     logout: "लॉग आउट",
     fields: "खेत",
@@ -250,37 +416,5 @@ export const STRINGS: Record<Lang, Record<string, string>> = {
     paused: "रुका",
     stopped: "बंद",
     idle: "निष्क्रिय",
-  },
+  }
 };
-
-// simple singleton store for language + user
-type Listener = () => void;
-class Store {
-  lang: Lang = "en";
-  user: any = null;
-  private listeners = new Set<Listener>();
-  subscribe(l: Listener) {
-    this.listeners.add(l);
-    return () => this.listeners.delete(l);
-  }
-  private emit() {
-    this.listeners.forEach((l) => l());
-  }
-  async init() {
-    const l = (await AsyncStorage.getItem("rm_lang")) as Lang | null;
-    if (l && ["en", "te", "hi"].includes(l)) this.lang = l;
-  }
-  async setLang(l: Lang) {
-    this.lang = l;
-    await AsyncStorage.setItem("rm_lang", l);
-    this.emit();
-  }
-  setUser(u: any) {
-    this.user = u;
-    this.emit();
-  }
-  t(key: string): string {
-    return STRINGS[this.lang][key] || STRINGS.en[key] || key;
-  }
-}
-export const store = new Store();

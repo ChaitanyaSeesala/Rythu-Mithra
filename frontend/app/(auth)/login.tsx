@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 
-import { COLORS, RADIUS, SPACING, apiFetch, saveToken, store } from "@/src/lib/api";
+import { COLORS, RADIUS, SPACING, AuthApi, store } from "@/src/lib/api";
 
 export default function LoginScreen() {
   const [mobile, setMobile] = useState("");
@@ -32,12 +32,13 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const res = await apiFetch<{ token: string; user: any }>("/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ mobile: mobile.trim(), password }),
-      });
-      await saveToken(res.token);
-      store.setUser(res.user);
+      // Ported logic: Uses AuthApi.login which hits auth.php and saves to local DB
+      const res = await AuthApi.login(mobile.trim(), password);
+
+      if (res.farmer) {
+        store.setUser(res.farmer);
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace("/(tabs)/home");
     } catch (e: any) {
@@ -69,10 +70,10 @@ export default function LoginScreen() {
         style={styles.formWrap}
       >
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to monitor your farm</Text>
+          <Text style={styles.title}>{store.t("welcome_back")}</Text>
+          <Text style={styles.subtitle}>{store.t("sign_in_sub")}</Text>
 
-          <Text style={styles.label}>Mobile Number</Text>
+          <Text style={styles.label}>{store.t("mobile")}</Text>
           <TextInput
             testID="login-mobile-input"
             value={mobile}
@@ -83,7 +84,7 @@ export default function LoginScreen() {
             style={styles.input}
           />
 
-          <Text style={[styles.label, { marginTop: SPACING.lg }]}>Password</Text>
+          <Text style={[styles.label, { marginTop: SPACING.lg }]}>{store.t("password")}</Text>
           <View style={styles.pwRow}>
             <TextInput
               testID="login-password-input"
@@ -104,7 +105,7 @@ export default function LoginScreen() {
           </View>
 
           <Pressable style={styles.forgot} testID="forgot-password-link">
-            <Text style={styles.forgotText}>Forgot Password?</Text>
+            <Text style={styles.forgotText}>{store.t("forgot")}</Text>
           </Pressable>
 
           {error && (
@@ -119,7 +120,7 @@ export default function LoginScreen() {
             disabled={loading}
             onPress={submit}
           >
-            <Text style={styles.primaryBtnText}>{loading ? "Signing in…" : "Login"}</Text>
+            <Text style={styles.primaryBtnText}>{loading ? "Signing in…" : store.t("login")}</Text>
           </Pressable>
 
           <Pressable
@@ -127,7 +128,7 @@ export default function LoginScreen() {
             style={styles.secondaryBtn}
             onPress={() => router.push("/(auth)/signup")}
           >
-            <Text style={styles.secondaryBtnText}>Create Account</Text>
+            <Text style={styles.secondaryBtnText}>{store.t("create_account")}</Text>
           </Pressable>
 
           <Text style={styles.terms}>
